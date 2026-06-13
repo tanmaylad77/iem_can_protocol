@@ -1,0 +1,33 @@
+{
+  "name": "iem_can_protocol",
+  "version": "0.1.0",
+  "description": "Shared Arduino-compatible CAN protocol packing and unpacking helpers for IEM firmware.",
+  "keywords": [
+    "can",
+    "bms",
+    "arduino",
+    "stm32",
+    "esp32",
+    "samd51"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tanmaylad77/iem_can_protocol.git"
+  },
+  "authors": [
+    {
+      "name": "Tanmay Lad",
+      "email": "tanmaylad77@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": [
+    "ststm32",
+    "espressif32",
+    "atmelsam"
+  ],
+  "headers": [
+    "iem_can_protocol.h"
+  ]
+}
