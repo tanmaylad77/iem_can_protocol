@@ -11,7 +11,8 @@
 #define IEM_CAN_NODE_MOTOR_CONTROLLER 2
 
 // Payload scaling used across all frames:
-// voltage = mV, current = mA, power = deciwatts, temperature = deci-degrees C.
+// voltage = mV, current = mA, power = deciwatts, temperature = deci-degrees C,
+// angular speed = milliradians per second.
 // Extended 29-bit IDs. Keep these definitions shared by all Arduino targets
 // so STM32, ESP32, SAMD51, and motor controller firmware agree on the wire format.
 #define IEM_CAN_BMS_BASE_ID             0x18B50000UL
@@ -32,6 +33,7 @@
 // receiving MC firmware can represent regen or reverse-current commands later.
 #define IEM_CAN_MC_BASE_ID              0x18C00000UL
 #define IEM_CAN_ID_MC_COMMAND           (IEM_CAN_MC_BASE_ID + 0x00UL)
+#define IEM_CAN_ID_MC_WHEEL_SPEED       (IEM_CAN_MC_BASE_ID + 0x01UL)
 
 enum IEMCanBMSState : uint8_t {
     IEM_CAN_BMS_STATE_IDLE = 0,
@@ -129,6 +131,10 @@ struct IEMCanMCCommand {
     uint8_t throttle_raw;
 };
 
+struct IEMCanMCWheelSpeed {
+    int32_t wheel_speed_mrad_s;
+};
+
 uint8_t iemCanMakeBMSFlags(bool latched, bool estop_pressed, uint8_t safety_status);
 uint8_t iemCanMakeBMSState(bool latched, bool estop_pressed, uint8_t safety_status);
 
@@ -172,5 +178,11 @@ bool iemCanUnpackMCCommand(const IEMCanFrame &frame, IEMCanMCCommand &payload);
 bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &throttle_0_to_1);
 float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload);
 float iemCanMCCommandThrottle(const IEMCanMCCommand &payload);
+
+// Wheel speed helpers use rad/s in firmware and mrad/s on the CAN bus.
+void iemCanPackMCWheelSpeed(float wheel_speed_rad_s, IEMCanFrame &frame);
+bool iemCanUnpackMCWheelSpeed(const IEMCanFrame &frame, IEMCanMCWheelSpeed &payload);
+bool iemCanUnpackMCWheelSpeedFloat(const IEMCanFrame &frame, float &wheel_speed_rad_s);
+float iemCanMCWheelSpeedRadS(const IEMCanMCWheelSpeed &payload);
 
 #endif // IEM_CAN_PROTOCOL_H

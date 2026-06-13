@@ -16,6 +16,13 @@ static void printFrame(const IEMCanFrame &frame) {
 static void applyReceivedFrame(const IEMCanFrame &frame) {
   float commandedCurrentA;
   float throttle;
+  float wheelSpeedRadS;
+
+  if (iemCanUnpackMCWheelSpeedFloat(frame, wheelSpeedRadS)) {
+    Serial.print("Wheel speed rad/s: ");
+    Serial.println(wheelSpeedRadS, 3);
+    return;
+  }
 
   if (!iemCanUnpackMCCommandFloats(frame, commandedCurrentA, throttle)) {
     return;
@@ -40,6 +47,11 @@ void setup() {
   printFrame(frame);
 
   // In real firmware, this frame would arrive from the CAN driver receive path.
+  applyReceivedFrame(frame);
+
+  const float wheelSpeedRadS = 81.25f;
+  iemCanPackMCWheelSpeed(wheelSpeedRadS, frame);
+  printFrame(frame);
   applyReceivedFrame(frame);
 }
 

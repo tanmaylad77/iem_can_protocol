@@ -303,3 +303,25 @@ float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload) {
 float iemCanMCCommandThrottle(const IEMCanMCCommand &payload) {
     return payload.throttle_raw / 255.0f;
 }
+
+void iemCanPackMCWheelSpeed(float wheel_speed_rad_s, IEMCanFrame &frame) {
+    initFrame(frame, IEM_CAN_ID_MC_WHEEL_SPEED);
+    putI32(frame.data, 0, roundScaled(wheel_speed_rad_s, 1000.0f));
+}
+
+bool iemCanUnpackMCWheelSpeed(const IEMCanFrame &frame, IEMCanMCWheelSpeed &payload) {
+    if (!isFrame(frame, IEM_CAN_ID_MC_WHEEL_SPEED)) return false;
+    payload.wheel_speed_mrad_s = getI32(frame.data, 0);
+    return true;
+}
+
+bool iemCanUnpackMCWheelSpeedFloat(const IEMCanFrame &frame, float &wheel_speed_rad_s) {
+    IEMCanMCWheelSpeed payload;
+    if (!iemCanUnpackMCWheelSpeed(frame, payload)) return false;
+    wheel_speed_rad_s = iemCanMCWheelSpeedRadS(payload);
+    return true;
+}
+
+float iemCanMCWheelSpeedRadS(const IEMCanMCWheelSpeed &payload) {
+    return payload.wheel_speed_mrad_s / 1000.0f;
+}

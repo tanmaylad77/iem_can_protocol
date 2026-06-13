@@ -8,7 +8,7 @@ For PlatformIO projects, pin a release tag in `platformio.ini`:
 
 ```ini
 lib_deps =
-  https://github.com/tanmaylad77/iem_can_protocol.git#v0.2.0
+  https://github.com/tanmaylad77/iem_can_protocol.git#v0.3.0
 ```
 
 For Arduino IDE projects, install the library from a downloaded ZIP or add this repo under your sketchbook `libraries` folder.
@@ -17,7 +17,7 @@ Board-specific CAN setup stays in the consuming firmware. This library only defi
 
 ## Protocol
 
-The protocol uses 29-bit extended CAN IDs at an initial bus rate of 250 kbps. Payloads are always 8 bytes and little-endian. Voltages are sent in millivolts, current in milliamps, power in deciwatts, and temperatures in deci-degrees C.
+The protocol uses 29-bit extended CAN IDs at an initial bus rate of 250 kbps. Payloads are always 8 bytes and little-endian. Voltages are sent in millivolts, current in milliamps, power in deciwatts, temperatures in deci-degrees C, and wheel speed in milliradians per second.
 
 | ID | Frame | Payload |
 | --- | --- | --- |
@@ -34,6 +34,7 @@ The protocol uses 29-bit extended CAN IDs at an initial bus rate of 250 kbps. Pa
 | `0x18B5000A` | Pack limits | pack_OV_mV, pack_UV_mV |
 | `0x18B5000B` | Current/temp limits | pack_OC_mA, temp_high_dC, temp_low_dC |
 | `0x18C00000` | MC command | commanded_current_mA, throttle_raw |
+| `0x18C00001` | MC wheel speed | wheel_speed_mrad_s |
 
 ## Motor Controller Command
 
@@ -65,5 +66,25 @@ if (iemCanUnpackMCCommandFloats(frame, currentA, throttle)) {
   // Apply command to the motor controller.
 }
 ```
+
+## Motor Controller Wheel Speed
+
+Wheel speed helpers accept and return rad/s in firmware code:
+
+```cpp
+IEMCanFrame frame;
+iemCanPackMCWheelSpeed(wheelSpeedRadS, frame);
+```
+
+On the receiving side:
+
+```cpp
+float wheelSpeedRadS;
+if (iemCanUnpackMCWheelSpeedFloat(frame, wheelSpeedRadS)) {
+  // Use wheelSpeedRadS in control, logging, or telemetry.
+}
+```
+
+The CAN payload stores the value as signed milliradians per second, so negative speeds can be represented if the motor-controller convention needs them.
 
 Keep this library platform-neutral. Board-specific CAN driver setup belongs in the consuming firmware, not in this protocol layer.
