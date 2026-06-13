@@ -28,6 +28,12 @@ static int16_t clampI16(int32_t value) {
     return (int16_t)value;
 }
 
+static uint8_t clampU8(int32_t value) {
+    if (value < 0) return 0;
+    if (value > 255) return 255;
+    return (uint8_t)value;
+}
+
 static void putU16(uint8_t *data, uint8_t index, uint16_t value) {
     // CAN payloads are explicitly little-endian so receivers do not depend on MCU endianness.
     data[index] = (uint8_t)(value & 0xFF);
@@ -267,4 +273,33 @@ bool iemCanUnpackCurrentTempLimits(const IEMCanFrame &frame, IEMCanCurrentTempLi
     payload.temp_high_dc = getI16(frame.data, 4);
     payload.temp_low_dc = getI16(frame.data, 6);
     return true;
+}
+
+void iemCanPackMCCommand(float commanded_current_a, float throttle_0_to_1, IEMCanFrame &frame) {
+    initFrame(frame, IEM_CAN_ID_MC_COMMAND);
+    putI32(frame.data, 0, roundScaled(commanded_current_a, 1000.0f));
+    frame.data[4] = clampU8(roundScaled(throttle_0_to_1, 255.0f));
+}
+
+bool iemCanUnpackMCCommand(const IEMCanFrame &frame, IEMCanMCCommand &payload) {
+    if (!isFrame(frame, IEM_CAN_ID_MC_COMMAND)) return false;
+    payload.commanded_current_ma = getI32(frame.data, 0);
+    payload.throttle_raw = frame.data[4];
+    return true;
+}
+
+bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &throttle_0_to_1) {
+    IEMCanMCCommand payload;
+    if (!iemCanUnpackMCCommand(frame, payload)) return false;
+    commanded_current_a = iemCanMCCommandCurrentA(payload);
+    throttle_0_to_1 = iemCanMCCommandThrottle(payload);
+    return true;
+}
+
+float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload) {
+    return payload.commanded_current_ma / 1000.0f;
+}
+
+float iemCanMCCommandThrottle(const IEMCanMCCommand &payload) {
+    return payload.throttle_raw / 255.0f;
 }

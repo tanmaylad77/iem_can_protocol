@@ -8,6 +8,7 @@
 #define IEM_CAN_BAUD 250000UL
 #define IEM_CAN_FRAME_LEN 8
 #define IEM_CAN_NODE_BMS 1
+#define IEM_CAN_NODE_MOTOR_CONTROLLER 2
 
 // Payload scaling used across all frames:
 // voltage = mV, current = mA, power = deciwatts, temperature = deci-degrees C.
@@ -26,6 +27,11 @@
 #define IEM_CAN_ID_BMS_LIMITS_CELL      (IEM_CAN_BMS_BASE_ID + 0x09UL)
 #define IEM_CAN_ID_BMS_LIMITS_PACK      (IEM_CAN_BMS_BASE_ID + 0x0AUL)
 #define IEM_CAN_ID_BMS_LIMITS_CURRENT_TEMP (IEM_CAN_BMS_BASE_ID + 0x0BUL)
+
+// Motor-controller command frames. The commanded current is signed so the
+// receiving MC firmware can represent regen or reverse-current commands later.
+#define IEM_CAN_MC_BASE_ID              0x18C00000UL
+#define IEM_CAN_ID_MC_COMMAND           (IEM_CAN_MC_BASE_ID + 0x00UL)
 
 enum IEMCanBMSState : uint8_t {
     IEM_CAN_BMS_STATE_IDLE = 0,
@@ -118,6 +124,11 @@ struct IEMCanCurrentTempLimits {
     int16_t temp_low_dc;
 };
 
+struct IEMCanMCCommand {
+    int32_t commanded_current_ma;
+    uint8_t throttle_raw;
+};
+
 uint8_t iemCanMakeBMSFlags(bool latched, bool estop_pressed, uint8_t safety_status);
 uint8_t iemCanMakeBMSState(bool latched, bool estop_pressed, uint8_t safety_status);
 
@@ -153,5 +164,13 @@ bool iemCanUnpackPackLimits(const IEMCanFrame &frame, IEMCanPackLimits &payload)
 
 void iemCanPackCurrentTempLimits(float pack_oc_a, float temp_high_c, float temp_low_c, IEMCanFrame &frame);
 bool iemCanUnpackCurrentTempLimits(const IEMCanFrame &frame, IEMCanCurrentTempLimits &payload);
+
+// MC-facing helpers use the natural firmware units: current in amps and
+// throttle as 0.0-1.0. The CAN payload stores current in mA and throttle as 0-255.
+void iemCanPackMCCommand(float commanded_current_a, float throttle_0_to_1, IEMCanFrame &frame);
+bool iemCanUnpackMCCommand(const IEMCanFrame &frame, IEMCanMCCommand &payload);
+bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &throttle_0_to_1);
+float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload);
+float iemCanMCCommandThrottle(const IEMCanMCCommand &payload);
 
 #endif // IEM_CAN_PROTOCOL_H

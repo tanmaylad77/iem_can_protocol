@@ -8,7 +8,7 @@ For PlatformIO projects, pin a release tag in `platformio.ini`:
 
 ```ini
 lib_deps =
-  https://github.com/tanmaylad77/iem_can_protocol.git#v0.1.0
+  https://github.com/tanmaylad77/iem_can_protocol.git#v0.2.0
 ```
 
 For Arduino IDE projects, install the library from a downloaded ZIP or add this repo under your sketchbook `libraries` folder.
@@ -33,5 +33,37 @@ The protocol uses 29-bit extended CAN IDs at an initial bus rate of 250 kbps. Pa
 | `0x18B50009` | Cell limits | cell_OV_mV, cell_UV_mV, balance_threshold_mV, balance_tolerance_mV |
 | `0x18B5000A` | Pack limits | pack_OV_mV, pack_UV_mV |
 | `0x18B5000B` | Current/temp limits | pack_OC_mA, temp_high_dC, temp_low_dC |
+| `0x18C00000` | MC command | commanded_current_mA, throttle_raw |
+
+## Motor Controller Command
+
+The motor-controller command helper accepts values in the units normally used by controller firmware:
+
+```cpp
+IEMCanFrame frame;
+iemCanPackMCCommand(commandedCurrentA, throttlePosition, frame);
+```
+
+`commandedCurrentA` is a signed float in amps. `throttlePosition` is a float from `0.0` to `1.0`; the helper clamps it to the CAN payload range `0-255`.
+
+On the receiving side, use either the raw payload:
+
+```cpp
+IEMCanMCCommand command;
+if (iemCanUnpackMCCommand(frame, command)) {
+  float currentA = iemCanMCCommandCurrentA(command);
+  float throttle = iemCanMCCommandThrottle(command);
+}
+```
+
+or unpack directly to floats:
+
+```cpp
+float currentA;
+float throttle;
+if (iemCanUnpackMCCommandFloats(frame, currentA, throttle)) {
+  // Apply command to the motor controller.
+}
+```
 
 Keep this library platform-neutral. Board-specific CAN driver setup belongs in the consuming firmware, not in this protocol layer.
