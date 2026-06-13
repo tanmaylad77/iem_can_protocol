@@ -9,6 +9,7 @@
 #define IEM_CAN_FRAME_LEN 8
 #define IEM_CAN_NODE_BMS 1
 #define IEM_CAN_NODE_MOTOR_CONTROLLER 2
+#define IEM_CAN_NODE_DISPLAY 3
 
 // Payload scaling used across all frames:
 // voltage = mV, current = mA, power = deciwatts, temperature = deci-degrees C,
@@ -34,6 +35,9 @@
 #define IEM_CAN_MC_BASE_ID              0x18C00000UL
 #define IEM_CAN_ID_MC_COMMAND           (IEM_CAN_MC_BASE_ID + 0x00UL)
 #define IEM_CAN_ID_MC_WHEEL_SPEED       (IEM_CAN_MC_BASE_ID + 0x01UL)
+
+#define IEM_CAN_MC_DISPLAY_HAS_COMMAND      (1 << 0)
+#define IEM_CAN_MC_DISPLAY_HAS_WHEEL_SPEED  (1 << 1)
 
 enum IEMCanBMSState : uint8_t {
     IEM_CAN_BMS_STATE_IDLE = 0,
@@ -135,6 +139,13 @@ struct IEMCanMCWheelSpeed {
     int32_t wheel_speed_mrad_s;
 };
 
+struct IEMCanMCDisplayState {
+    float commanded_current_a;
+    float throttle_0_to_1;
+    float wheel_speed_rad_s;
+    uint8_t valid_flags;
+};
+
 uint8_t iemCanMakeBMSFlags(bool latched, bool estop_pressed, uint8_t safety_status);
 uint8_t iemCanMakeBMSState(bool latched, bool estop_pressed, uint8_t safety_status);
 
@@ -184,5 +195,10 @@ void iemCanPackMCWheelSpeed(float wheel_speed_rad_s, IEMCanFrame &frame);
 bool iemCanUnpackMCWheelSpeed(const IEMCanFrame &frame, IEMCanMCWheelSpeed &payload);
 bool iemCanUnpackMCWheelSpeedFloat(const IEMCanFrame &frame, float &wheel_speed_rad_s);
 float iemCanMCWheelSpeedRadS(const IEMCanMCWheelSpeed &payload);
+
+// Display receivers can feed every CAN frame into this helper and redraw from
+// IEMCanMCDisplayState whenever it returns true.
+void iemCanInitMCDisplayState(IEMCanMCDisplayState &state);
+bool iemCanUpdateMCDisplayState(const IEMCanFrame &frame, IEMCanMCDisplayState &state);
 
 #endif // IEM_CAN_PROTOCOL_H

@@ -325,3 +325,30 @@ bool iemCanUnpackMCWheelSpeedFloat(const IEMCanFrame &frame, float &wheel_speed_
 float iemCanMCWheelSpeedRadS(const IEMCanMCWheelSpeed &payload) {
     return payload.wheel_speed_mrad_s / 1000.0f;
 }
+
+void iemCanInitMCDisplayState(IEMCanMCDisplayState &state) {
+    state.commanded_current_a = 0.0f;
+    state.throttle_0_to_1 = 0.0f;
+    state.wheel_speed_rad_s = 0.0f;
+    state.valid_flags = 0;
+}
+
+bool iemCanUpdateMCDisplayState(const IEMCanFrame &frame, IEMCanMCDisplayState &state) {
+    float commanded_current_a;
+    float throttle_0_to_1;
+    if (iemCanUnpackMCCommandFloats(frame, commanded_current_a, throttle_0_to_1)) {
+        state.commanded_current_a = commanded_current_a;
+        state.throttle_0_to_1 = throttle_0_to_1;
+        state.valid_flags |= IEM_CAN_MC_DISPLAY_HAS_COMMAND;
+        return true;
+    }
+
+    float wheel_speed_rad_s;
+    if (iemCanUnpackMCWheelSpeedFloat(frame, wheel_speed_rad_s)) {
+        state.wheel_speed_rad_s = wheel_speed_rad_s;
+        state.valid_flags |= IEM_CAN_MC_DISPLAY_HAS_WHEEL_SPEED;
+        return true;
+    }
+
+    return false;
+}

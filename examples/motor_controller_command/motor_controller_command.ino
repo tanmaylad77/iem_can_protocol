@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <iem_can_protocol.h>
 
+static IEMCanMCDisplayState displayState;
+
 static void printFrame(const IEMCanFrame &frame) {
   Serial.print("TX ID: 0x");
   Serial.println(frame.id, HEX);
@@ -17,6 +19,13 @@ static void applyReceivedFrame(const IEMCanFrame &frame) {
   float commandedCurrentA;
   float throttle;
   float wheelSpeedRadS;
+
+  if (iemCanUpdateMCDisplayState(frame, displayState)) {
+    Serial.print("Display cache throttle 0-1: ");
+    Serial.println(displayState.throttle_0_to_1, 3);
+    Serial.print("Display cache wheel speed rad/s: ");
+    Serial.println(displayState.wheel_speed_rad_s, 3);
+  }
 
   if (iemCanUnpackMCWheelSpeedFloat(frame, wheelSpeedRadS)) {
     Serial.print("Wheel speed rad/s: ");
@@ -38,6 +47,7 @@ static void applyReceivedFrame(const IEMCanFrame &frame) {
 
 void setup() {
   Serial.begin(115200);
+  iemCanInitMCDisplayState(displayState);
 
   const float commandedCurrentA = 35.5f;
   const float throttle = 0.72f;

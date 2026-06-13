@@ -8,7 +8,7 @@ For PlatformIO projects, pin a release tag in `platformio.ini`:
 
 ```ini
 lib_deps =
-  https://github.com/tanmaylad77/iem_can_protocol.git#v0.3.0
+  https://github.com/tanmaylad77/iem_can_protocol.git#v0.4.0
 ```
 
 For Arduino IDE projects, install the library from a downloaded ZIP or add this repo under your sketchbook `libraries` folder.
@@ -86,5 +86,28 @@ if (iemCanUnpackMCWheelSpeedFloat(frame, wheelSpeedRadS)) {
 ```
 
 The CAN payload stores the value as signed milliradians per second, so negative speeds can be represented if the motor-controller convention needs them.
+
+## Driver Display Receiver
+
+For an Adafruit Feather M4 CAN with an OLED display, keep the CAN driver and OLED drawing code in the display firmware, and use this library only for decoding. The Feather M4 CAN has built-in CAN hardware and transceiver support, and Adafruit documents Arduino/CircuitPython support for reading and writing CAN packets.
+
+The display firmware can maintain a cached state like this:
+
+```cpp
+IEMCanMCDisplayState displayState;
+
+void setup() {
+  iemCanInitMCDisplayState(displayState);
+  // Init CAN driver at IEM_CAN_BAUD and init OLED here.
+}
+
+void onCanFrame(const IEMCanFrame &frame) {
+  if (iemCanUpdateMCDisplayState(frame, displayState)) {
+    // Redraw OLED from displayState.throttle_0_to_1 and displayState.wheel_speed_rad_s.
+  }
+}
+```
+
+The helper sets `IEM_CAN_MC_DISPLAY_HAS_COMMAND` once a throttle/current command has been received and `IEM_CAN_MC_DISPLAY_HAS_WHEEL_SPEED` once wheel speed has been received. This lets the OLED show placeholders until real CAN data has arrived.
 
 Keep this library platform-neutral. Board-specific CAN driver setup belongs in the consuming firmware, not in this protocol layer.
