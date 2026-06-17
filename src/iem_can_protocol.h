@@ -133,6 +133,7 @@ struct IEMCanCurrentTempLimits {
 struct IEMCanMCCommand {
     int32_t commanded_current_ma;
     uint8_t throttle_raw;
+    uint16_t current_limit_ma;
 };
 
 struct IEMCanMCWheelSpeed {
@@ -141,6 +142,7 @@ struct IEMCanMCWheelSpeed {
 
 struct IEMCanMCDisplayState {
     float commanded_current_a;
+    float current_limit_a;
     float throttle_0_to_1;
     float wheel_speed_rad_s;
     uint8_t valid_flags;
@@ -185,9 +187,12 @@ bool iemCanUnpackCurrentTempLimits(const IEMCanFrame &frame, IEMCanCurrentTempLi
 // MC-facing helpers use the natural firmware units: current in amps and
 // throttle as 0.0-1.0. The CAN payload stores current in mA and throttle as 0-255.
 void iemCanPackMCCommand(float commanded_current_a, float throttle_0_to_1, IEMCanFrame &frame);
+void iemCanPackMCCommand(float commanded_current_a, float current_limit_a, float throttle_0_to_1, IEMCanFrame &frame);
 bool iemCanUnpackMCCommand(const IEMCanFrame &frame, IEMCanMCCommand &payload);
 bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &throttle_0_to_1);
+bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &current_limit_a, float &throttle_0_to_1);
 float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload);
+float iemCanMCCommandCurrentLimitA(const IEMCanMCCommand &payload);
 float iemCanMCCommandThrottle(const IEMCanMCCommand &payload);
 
 // Wheel speed helpers use rad/s in firmware and mrad/s on the CAN bus.

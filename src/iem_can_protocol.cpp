@@ -276,15 +276,21 @@ bool iemCanUnpackCurrentTempLimits(const IEMCanFrame &frame, IEMCanCurrentTempLi
 }
 
 void iemCanPackMCCommand(float commanded_current_a, float throttle_0_to_1, IEMCanFrame &frame) {
+    iemCanPackMCCommand(commanded_current_a, 0.0f, throttle_0_to_1, frame);
+}
+
+void iemCanPackMCCommand(float commanded_current_a, float current_limit_a, float throttle_0_to_1, IEMCanFrame &frame) {
     initFrame(frame, IEM_CAN_ID_MC_COMMAND);
     putI32(frame.data, 0, roundScaled(commanded_current_a, 1000.0f));
     frame.data[4] = clampU8(roundScaled(throttle_0_to_1, 255.0f));
+    putU16(frame.data, 5, clampU16(roundScaled(current_limit_a, 1000.0f)));
 }
 
 bool iemCanUnpackMCCommand(const IEMCanFrame &frame, IEMCanMCCommand &payload) {
     if (!isFrame(frame, IEM_CAN_ID_MC_COMMAND)) return false;
     payload.commanded_current_ma = getI32(frame.data, 0);
     payload.throttle_raw = frame.data[4];
+    payload.current_limit_ma = getU16(frame.data, 5);
     return true;
 }
 
@@ -296,8 +302,21 @@ bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_curr
     return true;
 }
 
+bool iemCanUnpackMCCommandFloats(const IEMCanFrame &frame, float &commanded_current_a, float &current_limit_a, float &throttle_0_to_1) {
+    IEMCanMCCommand payload;
+    if (!iemCanUnpackMCCommand(frame, payload)) return false;
+    commanded_current_a = iemCanMCCommandCurrentA(payload);
+    current_limit_a = iemCanMCCommandCurrentLimitA(payload);
+    throttle_0_to_1 = iemCanMCCommandThrottle(payload);
+    return true;
+}
+
 float iemCanMCCommandCurrentA(const IEMCanMCCommand &payload) {
     return payload.commanded_current_ma / 1000.0f;
+}
+
+float iemCanMCCommandCurrentLimitA(const IEMCanMCCommand &payload) {
+    return payload.current_limit_ma / 1000.0f;
 }
 
 float iemCanMCCommandThrottle(const IEMCanMCCommand &payload) {
@@ -328,6 +347,7 @@ float iemCanMCWheelSpeedRadS(const IEMCanMCWheelSpeed &payload) {
 
 void iemCanInitMCDisplayState(IEMCanMCDisplayState &state) {
     state.commanded_current_a = 0.0f;
+    state.current_limit_a = 0.0f;
     state.throttle_0_to_1 = 0.0f;
     state.wheel_speed_rad_s = 0.0f;
     state.valid_flags = 0;
@@ -335,9 +355,11 @@ void iemCanInitMCDisplayState(IEMCanMCDisplayState &state) {
 
 bool iemCanUpdateMCDisplayState(const IEMCanFrame &frame, IEMCanMCDisplayState &state) {
     float commanded_current_a;
+    float current_limit_a;
     float throttle_0_to_1;
-    if (iemCanUnpackMCCommandFloats(frame, commanded_current_a, throttle_0_to_1)) {
+    if (iemCanUnpackMCCommandFloats(frame, commanded_current_a, current_limit_a, throttle_0_to_1)) {
         state.commanded_current_a = commanded_current_a;
+        state.current_limit_a = current_limit_a;
         state.throttle_0_to_1 = throttle_0_to_1;
         state.valid_flags |= IEM_CAN_MC_DISPLAY_HAS_COMMAND;
         return true;

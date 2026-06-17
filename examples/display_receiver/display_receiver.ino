@@ -16,8 +16,14 @@ static void redrawDisplay() {
   if (displayState.valid_flags & IEM_CAN_MC_DISPLAY_HAS_COMMAND) {
     Serial.print("Throttle %: ");
     Serial.println(displayState.throttle_0_to_1 * 100.0f, 0);
+    Serial.print("Requested current A: ");
+    Serial.println(displayState.commanded_current_a, 1);
+    Serial.print("Current limit A: ");
+    Serial.println(displayState.current_limit_a, 1);
   } else {
     Serial.println("Throttle %: --");
+    Serial.println("Requested current A: --");
+    Serial.println("Current limit A: --");
   }
 }
 
@@ -37,7 +43,7 @@ void setup() {
 
   // Demo frames. Real display firmware receives these from the CAN driver.
   IEMCanFrame frame;
-  iemCanPackMCCommand(40.0f, 0.63f, frame);
+  iemCanPackMCCommand(40.0f, 55.0f, 0.63f, frame);
   onCanFrameReceived(frame);
   iemCanPackMCWheelSpeed(92.5f, frame);
   onCanFrameReceived(frame);

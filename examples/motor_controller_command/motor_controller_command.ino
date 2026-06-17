@@ -17,12 +17,15 @@ static void printFrame(const IEMCanFrame &frame) {
 
 static void applyReceivedFrame(const IEMCanFrame &frame) {
   float commandedCurrentA;
+  float currentLimitA;
   float throttle;
   float wheelSpeedRadS;
 
   if (iemCanUpdateMCDisplayState(frame, displayState)) {
     Serial.print("Display cache throttle 0-1: ");
     Serial.println(displayState.throttle_0_to_1, 3);
+    Serial.print("Display cache current limit A: ");
+    Serial.println(displayState.current_limit_a, 3);
     Serial.print("Display cache wheel speed rad/s: ");
     Serial.println(displayState.wheel_speed_rad_s, 3);
   }
@@ -33,12 +36,14 @@ static void applyReceivedFrame(const IEMCanFrame &frame) {
     return;
   }
 
-  if (!iemCanUnpackMCCommandFloats(frame, commandedCurrentA, throttle)) {
+  if (!iemCanUnpackMCCommandFloats(frame, commandedCurrentA, currentLimitA, throttle)) {
     return;
   }
 
   Serial.print("Commanded current A: ");
   Serial.println(commandedCurrentA, 3);
+  Serial.print("Current limit A: ");
+  Serial.println(currentLimitA, 3);
   Serial.print("Throttle 0-1: ");
   Serial.println(throttle, 3);
 
@@ -50,10 +55,11 @@ void setup() {
   iemCanInitMCDisplayState(displayState);
 
   const float commandedCurrentA = 35.5f;
+  const float currentLimitA = 50.0f;
   const float throttle = 0.72f;
 
   IEMCanFrame frame;
-  iemCanPackMCCommand(commandedCurrentA, throttle, frame);
+  iemCanPackMCCommand(commandedCurrentA, currentLimitA, throttle, frame);
   printFrame(frame);
 
   // In real firmware, this frame would arrive from the CAN driver receive path.
