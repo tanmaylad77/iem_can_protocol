@@ -78,6 +78,10 @@ static bool isFrame(const IEMCanFrame &frame, uint32_t id) {
     return frame.id == id && frame.len == IEM_CAN_FRAME_LEN;
 }
 
+static bool isFrameAtLeast(const IEMCanFrame &frame, uint32_t id, uint8_t min_len) {
+    return frame.id == id && frame.len >= min_len && frame.len <= IEM_CAN_FRAME_LEN;
+}
+
 uint8_t iemCanMakeBMSFlags(bool latched, bool estop_pressed, uint8_t safety_status) {
     uint8_t flags = 0;
     if (latched) flags |= IEM_CAN_BMS_FLAG_LATCHED;
@@ -187,7 +191,9 @@ void iemCanPackTemperatures(float temp_1_c, float temp_2_c, float temp_3_c, IEMC
 }
 
 bool iemCanUnpackTemperatures(const IEMCanFrame &frame, IEMCanTemperatures &payload) {
-    if (!isFrame(frame, IEM_CAN_ID_BMS_TEMPERATURES)) return false;
+    // The temperature payload only uses bytes 0-5. Accept DLC 6 from senders
+    // that omit the reserved bytes, while still accepting the standard DLC 8.
+    if (!isFrameAtLeast(frame, IEM_CAN_ID_BMS_TEMPERATURES, 6)) return false;
     payload.temp_1_dc = getI16(frame.data, 0);
     payload.temp_2_dc = getI16(frame.data, 2);
     payload.temp_3_dc = getI16(frame.data, 4);

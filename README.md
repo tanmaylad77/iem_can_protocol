@@ -8,7 +8,7 @@ For PlatformIO projects, pin a release tag in `platformio.ini`:
 
 ```ini
 lib_deps =
-  https://github.com/tanmaylad77/iem_can_protocol.git#v0.5.0
+  https://github.com/tanmaylad77/iem_can_protocol.git#v0.5.1
 ```
 
 For Arduino IDE projects, install the library from a downloaded ZIP or add this repo under your sketchbook `libraries` folder.
@@ -115,3 +115,5 @@ void onCanFrame(const IEMCanFrame &frame) {
 The helper sets `IEM_CAN_MC_DISPLAY_HAS_COMMAND` once a throttle/current command has been received and `IEM_CAN_MC_DISPLAY_HAS_WHEEL_SPEED` once wheel speed has been received. This lets the OLED show placeholders until real CAN data has arrived.
 
 Keep this library platform-neutral. Board-specific CAN driver setup belongs in the consuming firmware, not in this protocol layer.
+
+Note: the BMS temperature frame uses bytes `0-5`; bytes `6-7` are reserved. Receivers accept either DLC 6 or DLC 8 for `0x18B50006`.
